@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>힐스테이트 전광판</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.9) 0%, rgba(118, 75, 162, 0.9) 100%),
+                        url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800"><defs><pattern id="buildings" patternUnits="userSpaceOnUse" width="120" height="80"><rect width="120" height="80" fill="%23f8f9fa" opacity="0.1"/><rect x="10" y="20" width="30" height="50" fill="%23ffffff" opacity="0.05"/><rect x="45" y="15" width="25" height="55" fill="%23ffffff" opacity="0.05"/><rect x="75" y="25" width="35" height="45" fill="%23ffffff" opacity="0.05"/></pattern></defs><rect width="100%" height="100%" fill="url(%23buildings)"/></svg>');
+            background-size: cover, 120px 80px;
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .display-container {
+            width: 98vw;
+            height: 95vh;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+            position: relative;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            color: white;
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .header h1 {
+            font-size: 2.2rem;
+            font-weight: bold;
+        }
+
+        .current-time {
+            font-size: 1.5rem;
+            font-weight: 300;
+        }
+
+        .grid-container {
+            height: calc(100% - 70px);
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            grid-template-rows: repeat(2, 1fr);
+            background: white;
+            border: 3px solid white;
+        }
+
+        .grid-item {
+            border: 1.5px solid white;
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+        }
+
+        .grid-item:hover {
+            transform: scale(1.02);
+            box-shadow: inset 0 0 0 3px rgba(255,255,255,0.8);
+            z-index: 10;
+        }
+
+        /* 배경 이미지 오버레이 */
+        .grid-item::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: inherit;
+            background-size: cover;
+            background-position: center;
+            opacity: 0.15;
+            z-index: 1;
+        }
+
+        /* 그라디언트 오버레이 */
+        .grid-item::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 2;
+        }
+
+        .grid-content {
+            position: relative;
+            z-index: 3;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            color: white;
+        }
+
+        /* 공지사항 스타일 */
+        .notice-item {
+            background-image: url('./images/notice.jpg');
+        }
+
+        .notice-item::after {
+            background: linear-gradient(135deg, rgba(240, 147, 251, 0.85) 0%, rgba(245, 87, 108, 0.85) 100%);
+        }
+
+        .notice-item h2 {
+            font-size: 1.8rem;
+            margin-bottom: 15px;
+            text-align: center;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+
+        .notice-content {
+            font-size: 0.9rem;
+            line-height: 1.4;
+            background: rgba(255,255,255,0.15);
+            padding: 15px;
+            border-radius: 10px;
+            backdrop-filter: blur(10px);
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .notice-content p {
+            margin-bottom: 6px;
+        }
+
+        .notice-content strong {
+            display: block;
+            margin: 8px 0 4px 0;
+        }
+
+        /* 비즈니스 아이템 공통 스타일 */
+        .business-item {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .business-header {
+            text-align: center;
+            margin-bottom: 10px;
+        }
+
+        .business-header h3 {
+            font-size: 1.5rem;
+            margin-bottom: 8px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.7);
+            font-weight: bold;
+        }
+
+        .business-icon {
+            font-size: 3rem;
+            margin: 10px 0;
+            text-align: center;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+
+        .business-info {
+            text-align: center;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .business-info .subtitle {
+            font-size: 0.9rem;
+            margin-bottom: 8px;
+            opacity: 0.95;
+            line-height: 1.3;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+        }
+
+        .business-info .contact {
+            font-size: 1.1rem;
+            font-weight: bold;
+            background: rgba(255,255,255,0.25);
+            padding: 8px 15px;
+            border-radius: 25px;
+            display: inline-block;
+            backdrop-filter: blur(10px);
+            margin-top: 10px;
+            border: 1px solid rgba(255,255,255,0.3);
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+        }
+
+        /* 개별 업체 스타일 */
+        .dental {
+            background-image: url('./images/dental.jpg');
+        }
+        .dental::after {
+            background: linear-gradient(135deg, rgba(79, 172, 254, 0.85) 0%, rgba(0, 242, 254, 0.85) 100%);
+        }
+
+        .cleaning {
+            background-image: url('./images/cleaning.jpg');
+        }
+        .cleaning::after {
+            background: linear-gradient(135deg, rgba(67, 233, 123, 0.85) 0%, rgba(56, 249, 215, 0.85) 100%);
+        }
+
+        .plumbing {
+            background-image: url('./images/plumbing.jpg');
+        }
+        .plumbing::after {
+            background: linear-gradient(135deg, rgba(247, 112, 154, 0.85) 0%, rgba(254, 225, 64, 0.85) 100%);
+        }
+
+        .lighting {
+            background-image: url('./images/lighting.jpg');
+        }
+        .lighting::after {
+            background: linear-gradient(135deg, rgba(168, 237, 234, 0.85) 0%, rgba(254, 214, 227, 0.85) 100%);
+        }
+
+        .car-wash {
+            background-image: url('./images/car-wash.jpg');
+        }
+        .car-wash::after {
+            background: linear-gradient(135deg, rgba(255, 154, 158, 0.85) 0%, rgba(254, 207, 239, 0.85) 100%);
+        }
+
+        .delivery {
+            background-image: url('./images/delivery.jpg');
+        }
+        .delivery::after {
+            background: linear-gradient(135deg, rgba(255, 236, 210, 0.85) 0%, rgba(252, 182, 159, 0.85) 100%);
+        }
+
+        .repair {
+            background-image: url('./images/repair.jpg');
+        }
+        .repair::after {
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.85) 0%, rgba(118, 75, 162, 0.85) 100%);
+        }
+
+        /* 애니메이션 */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .grid-item {
+            animation: fadeInUp 0.6s ease-out;
+        }
+
+        .grid-item:nth-child(1) { animation-delay: 0.1s; }
+        .grid-item:nth-child(2) { animation-delay: 0.2s; }
+        .grid-item:nth-child(3) { animation-delay: 0.3s; }
+        .grid-item:nth-child(4) { animation-delay: 0.4s; }
+        .grid-item:nth-child(5) { animation-delay: 0.5s; }
+        .grid-item:nth-child(6) { animation-delay: 0.6s; }
+        .grid-item:nth-child(7) { animation-delay: 0.7s; }
+        .grid-item:nth-child(8) { animation-delay: 0.8s; }
+
+        /* 반짝이는 효과 */
+        @keyframes sparkle {
+            0%, 100% { opacity: 0.8; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.05); }
+        }
+
+        .business-icon {
+            animation: sparkle 3s ease-in-out infinite;
+        }
+
+        /* 반응형 디자인 */
+        @media (max-width: 1200px) {
+            .header h1 { font-size: 1.8rem; }
+            .current-time { font-size: 1.2rem; }
+            .business-header h3 { font-size: 1.3rem; }
+            .business-icon { font-size: 2.5rem; }
+            .grid-content { padding: 15px; }
+        }
+
+        @media (max-width: 768px) {
+            .grid-container {
+                grid-template-columns: repeat(2, 1fr);
+                grid-template-rows: repeat(4, 1fr);
+            }
+            
+            .header h1 { font-size: 1.5rem; }
+            .current-time { font-size: 1rem; }
+            .business-header h3 { font-size: 1.2rem; }
+            .business-icon { font-size: 2rem; }
+            .grid-content { padding: 12px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="display-container">
+        <div class="header">
+            <h1>🏢 힐스테이트 알림마당</h1>
+            <div class="current-time" id="currentTime"></div>
+        </div>
+
+        <div class="grid-container">
+            <!-- 공지사항 -->
+            <div class="grid-item notice-item">
+                <div class="grid-content">
+                    <h2>📢 아파트 공지사항</h2>
+                    <div class="notice-content">
+                        <p><strong>🔧 정기 엘리베이터 점검</strong></p>
+                        <p>일시: 2024년 12월 20일 (금) 오전 9시~12시</p>
+                        <p>대상: 전동, 후동 엘리베이터</p>
+                        
+                        <p><strong>🚗 지하주차장 바닥 보수공사</strong></p>
+                        <p>기간: 12월 23일~25일 (3일간)</p>
+                        <p>협조: 임시주차 안내에 따라 주차 부탁드립니다</p>
+                        
+                        <p><strong>🎄 연말연시 관리사무소 휴무</strong></p>
+                        <p>12월 31일~1월 2일 (응급상황시 경비실 연락)</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 치과 -->
+            <div class="grid-item business-item dental">
+                <div class="grid-content">
+                    <div class="business-header">
+                        <h3>🦷 미소치과의원</h3>
+                    </div>
+                    <div class="business-icon">🦷</div>
+                    <div class="business-info">
+                        <div class="subtitle">아파트 주민 20% 할인 혜택!</div>
+                        <div class="subtitle">✨ 임플란트 전문 • 충치치료 • 스케일링</div>
+                        <div class="contact">📞 02-1234-5678</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 청소업체 -->
+            <div class="grid-item business-item cleaning">
+                <div class="grid-content">
+                    <div class="business-header">
+                        <h3>🧽 깔끔이 청소서비스</h3>
+                    </div>
+                    <div class="business-icon">🧹</div>
+                    <div class="business-info">
+                        <div class="subtitle">입주청소 • 이사청소 • 정기청소</div>
+                        <div class="subtitle">💎 프리미엄 친환경 세제 사용</div>
+                        <div class="contact">📞 010-9876-5432</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 하수구 업체 -->
+            <div class="grid-item business-item plumbing">
+                <div class="grid-content">
+                    <div class="business-header">
+                        <h3>🔧 24시간 배관서비스</h3>
+                    </div>
+                    <div class="business-icon">🚰</div>
+                    <div class="business-info">
+                        <div class="subtitle">하수구 뚫기 • 변기 막힘 • 누수 수리</div>
+                        <div class="subtitle">⚡ 출장비 무료 • 24시간 대기</div>
+                        <div class="contact">📞 010-1111-2222</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 조명/전기 -->
+            <div class="grid-item business-item lighting">
+                <div class="grid-content">
+                    <div class="business-header">
+                        <h3>💡 번개전기 조명센터</h3>
+                    </div>
+                    <div class="business-icon">⚡</div>
+                    <div class="business-info">
+                        <div class="subtitle">LED교체 • 콘센트 수리 • 전기배선</div>
+                        <div class="subtitle">🔌 안전점검 무료 서비스</div>
+                        <div class="contact">📞 010-3333-4444</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 세차 서비스 -->
+            <div class="grid-item business-item car-wash">
+                <div class="grid-content">
+                    <div class="business-header">
+                        <h3>🚗 피카피카 세차장</h3>
+                    </div>
+                    <div class="business-icon">🚙</div>
+                    <div class="business-info">
+                        <div class="subtitle">방문세차 • 광택코팅 • 실내청소</div>
+                        <div class="subtitle">🌟 아파트 주민 특가 30,000원</div>
+                        <div class="contact">📞 010-5555-6666</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 심부름 서비스 -->
+            <div class="grid-item business-item delivery">
+                <div class="grid-content">
+                    <div class="business-header">
+                        <h3>🏃‍♂️ 바쁜이 심부름센터</h3>
+                    </div>
+                    <div class="business-icon">📋</div>
+                    <div class="business-info">
+                        <div class="subtitle">장보기 • 약국 • 관공서 업무대행</div>
+                        <div class="subtitle">📦 택배발송 • 각종 서류 제출</div>
+                        <div class="contact">📞 010-7777-8888</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 종합수리 -->
+            <div class="grid-item business-item repair">
+                <div class="grid-content">
+                    <div class="business-header">
+                        <h3>🔨 만능 수리공방</h3>
+                    </div>
+                    <div class="business-icon">🔧</div>
+                    <div class="business-info">
+                        <div class="subtitle">가전수리 • 가구조립 • 타일보수</div>
+                        <div class="subtitle">🛠️ A/S 보장 • 정직한 견적</div>
+                        <div class="contact">📞 010-9999-0000</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 시간 표시
+        function updateTime() {
+            const now = new Date();
+            const timeString = now.toLocaleString('ko-KR', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            });
+            document.getElementById('currentTime').textContent = timeString;
+        }
+
+        // 초기화
+        updateTime();
+        setInterval(updateTime, 1000);
+
+        console.log('🏢 힐스테이트 타일형 전광판 시스템이 시작되었습니다!');
+    </script>
+</body>
+</html>
